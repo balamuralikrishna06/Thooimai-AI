@@ -1,12 +1,11 @@
 services:
   - type: web
-    name: thooimai-backend
+    name: thooimai-ai
     runtime: python
-    rootDir: backend
-    buildCommand: pip install --prefer-binary -r requirements.txt
-    startCommand: python run.py
+    rootDir: .
+    buildCommand: npm install && npm run build && pip install --prefer-binary -r backend/requirements.txt
+    startCommand: cd backend && python run.py
     envVars:
-
       - key: GEMINI_API_KEY
         sync: false
       - key: SUPABASE_URL
@@ -15,3 +14,9 @@ services:
         sync: false
       - key: SARVAM_API_KEY
         sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: PYTHONPATH
+        value: .
