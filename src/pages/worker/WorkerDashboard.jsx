@@ -81,14 +81,14 @@ export default function WorkerDashboard() {
     const [uploadingFor, setUploadingFor] = useState(null);
     const [previews, setPreviews] = useState({});
 
-    // Optimized Route (only non-completed tasks)
+    // Optimized Route (only non-completed tasks) — use user.uid for Firebase auth
     const optimizedTasks = useMemo(() => {
-        return optimizeRoute(reports, user?.id);
+        return optimizeRoute(reports, user?.uid);
     }, [reports, user]);
 
     // All tasks assigned to this worker (including completed – for progress tracking)
     const allMyTasks = useMemo(() => {
-        return reports.filter(r => r.assigned_worker_id === user?.id);
+        return reports.filter(r => r.assigned_worker_id === user?.uid);
     }, [reports, user]);
 
     const completedTodayCount = useMemo(() => {
@@ -267,7 +267,7 @@ export default function WorkerDashboard() {
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Efficiency</span>
                                 <span className={`text-xs font-extrabold ${efficiencyRating === "Excellent" ? "text-green-600" :
-                                        efficiencyRating === "Good" ? "text-[#13ecc8]" : "text-orange-500"
+                                    efficiencyRating === "Good" ? "text-[#13ecc8]" : "text-orange-500"
                                     }`}>{efficiencyRating}</span>
                             </div>
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${performanceBadge.color}`}>

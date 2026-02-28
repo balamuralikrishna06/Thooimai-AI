@@ -4,8 +4,9 @@
  */
 
 const GEMINI_API_KEYS = [
-    import.meta.env.VITE_GEMINI_API_KEY_1,
-    import.meta.env.VITE_GEMINI_API_KEY_2,
+    import.meta.env.VITE_API_KEY1,
+    import.meta.env.VITE_API_KEY2,
+    import.meta.env.VITE_API_KEY3,
 ].filter(Boolean);
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
