@@ -105,14 +105,20 @@ export function AuthProvider({ children }) {
     };
 
     const loginWithGoogle = async () => {
+        // Use custom domain in production, fallback to current origin (localhost)
+        const customDomain = "https://thooimai.sbmk.me";
+        const redirectUrl = window.location.hostname === "localhost" 
+            ? window.location.origin 
+            : customDomain;
+
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin
+                redirectTo: redirectUrl
             }
         });
         if (error) throw error;
-        return data; // Note: For OAuth, user info comes back later via onAuthStateChange
+        return data; 
     };
 
     const logout = async () => {

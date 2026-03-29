@@ -47,3 +47,20 @@ async def insert_report(
 
     response = supabase.table("reports").insert(payload).execute()
     return response.data[0] if response.data else {}
+
+
+async def update_report_media(report_id: int, audio_url: str = None, tts_url: str = None):
+    """
+    Update the report record with media URLs (audio recording and TTS)
+    after they have been uploaded in the background.
+    """
+    payload = {}
+    if audio_url:
+        payload["audio_url"] = audio_url
+    if tts_url:
+        payload["tts_url"] = tts_url
+
+    if not payload:
+        return
+
+    supabase.table("reports").update(payload).eq("id", report_id).execute()

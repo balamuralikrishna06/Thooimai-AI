@@ -70,7 +70,12 @@ Priority/Severity Rules:
 
     except Exception as e:
         # On quota exceeded (429), model errors, or any failure — use defaults
-        print(f"[WARN] Gemini analysis failed (using defaults): {e}")
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            print(f"🛑 [ERROR] Gemini API Quota Exceeded! Key: {os.getenv('GEMINI_API_KEY')[:10]}...")
+        else:
+            print(f"⚠️ [WARN] Gemini analysis failed: {error_msg}")
+            
         return {
             "priority": "medium",
             "severity": "Medium",
