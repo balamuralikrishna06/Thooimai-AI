@@ -51,7 +51,7 @@ export default function Dashboard() {
         // 1. Give the image a unique name
         const fileExt = file.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `${user.uid}/${fileName}`; // Organize by Firebase UID in the bucket
+        const filePath = `${user.id}/${fileName}`; // Organize by UID in the bucket
 
         // 2. Upload to Supabase Storage bucket 'reports'
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -95,7 +95,7 @@ export default function Dashboard() {
                 .from('reports')
                 .insert([
                     {
-                        firebase_uid: user.uid,
+                        user_id: user.id, // Using Supabase user.id instead of firebase_uid
                         image_url: imageUrl,
                         latitude: location.lat,
                         longitude: location.lng,
@@ -139,15 +139,15 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         <div className="size-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
-                            {user?.photoURL ? (
-                                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                            {user?.user_metadata?.avatar_url ? (
+                                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <span className="material-symbols-outlined text-slate-400 m-auto mt-1">person</span>
                             )}
                         </div>
                         <div className="hidden sm:block">
-                            <p className="text-xs font-bold leading-tight">{user?.displayName || user?.phoneNumber || "Citizen"}</p>
-                            <p className="text-[10px] text-slate-500 font-mono">{user?.uid.substring(0, 8)}...</p>
+                            <p className="text-xs font-bold leading-tight">{user?.user_metadata?.full_name || user?.email || "Citizen"}</p>
+                            <p className="text-[10px] text-slate-500 font-mono">{user?.id?.substring(0, 8)}...</p>
                         </div>
                     </div>
                     <button
@@ -169,8 +169,8 @@ export default function Dashboard() {
 
                     {statusMsg.msg && (
                         <div className={`mb-6 p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${statusMsg.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' :
-                                statusMsg.type === 'success' ? 'bg-[#13ecc8]/20 text-[#0d1b19] border border-[#13ecc8]/30' :
-                                    'bg-blue-50 text-blue-600 border border-blue-100'
+                            statusMsg.type === 'success' ? 'bg-[#13ecc8]/20 text-[#0d1b19] border border-[#13ecc8]/30' :
+                                'bg-blue-50 text-blue-600 border border-blue-100'
                             }`}>
                             <span className="material-symbols-outlined">
                                 {statusMsg.type === 'error' ? 'error' : statusMsg.type === 'success' ? 'check_circle' : 'info'}
@@ -216,8 +216,8 @@ export default function Dashboard() {
                                     type="button"
                                     onClick={handleGetLocation}
                                     className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-bold transition-colors border-2 ${location.fetched
-                                            ? "bg-[#13ecc8]/10 text-[#0d1b19] border-[#13ecc8] pointer-events-none"
-                                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                        ? "bg-[#13ecc8]/10 text-[#0d1b19] border-[#13ecc8] pointer-events-none"
+                                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                                         }`}
                                 >
                                     <span className="material-symbols-outlined">

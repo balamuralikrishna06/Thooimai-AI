@@ -5,7 +5,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Represents authenticated users. We link this to Firebase using firebase_uid.
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  firebase_uid VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255),
   email VARCHAR(255),
   phone VARCHAR(50),
@@ -17,7 +16,7 @@ CREATE TABLE users (
 -- Stores waste reports submitted by citizens.
 CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  firebase_uid VARCHAR(255) NOT NULL,
+  user_id UUID NOT NULL,
   image_url TEXT NOT NULL,
   latitude DOUBLE PRECISION,
   longitude DOUBLE PRECISION,
@@ -25,10 +24,10 @@ CREATE TABLE reports (
   status VARCHAR(50) DEFAULT 'Reported',
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   
-  -- Foreign key linking to the users table via firebase_uid
+  -- Foreign key linking to the users table via user_id
   CONSTRAINT fk_user
-    FOREIGN KEY(firebase_uid) 
-    REFERENCES users(firebase_uid)
+    FOREIGN KEY(user_id) 
+    REFERENCES users(id)
     ON DELETE CASCADE
 );
 

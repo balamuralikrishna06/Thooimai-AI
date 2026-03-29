@@ -36,3 +36,13 @@ backend/serviceAccountKey.json
 __pycache__/
 *.py[cod]
 *$py.class
+node_modules
+node_modules
+
+# Python virtual environment
+backend/venv/
+.venv/
+venv/
+env/
+*.pyc
+__pycache__/

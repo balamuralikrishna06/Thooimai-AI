@@ -2,8 +2,11 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from auth_verify import verify_firebase_token
+from app.routes.report import router as report_router
 
 app = FastAPI(title="Thooimai AI API")
+
+app.include_router(report_router, prefix="/api/v1")
 
 # Setup CORS for Frontend
 app.add_middleware(

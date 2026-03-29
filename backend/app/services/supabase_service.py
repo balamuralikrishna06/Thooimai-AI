@@ -21,28 +21,29 @@ async def insert_report(
     longitude: float,
     image_url: str,
     audio_url: str,
+    category: str = "General Waste",
+    location: str = "Unknown",
+    severity: str = "Medium",
+    ai_urgency_score: int = 50,
 ) -> dict:
-    """Insert a new report into the issue_reports table (schema from supabase_migration.sql)."""
-    location_str = area if area != "unknown" else "Madurai"
-    if ward != "unknown":
-        location_str = f"{location_str}, {ward}"
-
+    """Insert a new report into the reports table."""
     payload = {
-        "user_id": user_id,                      # Firebase UID (text)
-        "category": "garbage",                    # NOT NULL
-        "location": location_str,                 # NOT NULL
-        "latitude": latitude,                     # NOT NULL
-        "longitude": longitude,                   # NOT NULL
+        "user_id": user_id,
+        "latitude": latitude,
+        "longitude": longitude,
         "image_url": image_url,
         "audio_url": audio_url,
-        "status": "Pending",                      # must match check constraint exactly
-        "notes": f"Priority: {priority}",
+        "status": "pending",
         "description_tamil": description_tamil,
         "description_english": description_english,
         "priority": priority,
         "area": area,
         "ward": ward,
+        "category": category,
+        "location": location,
+        "severity": severity,
+        "ai_urgency_score": ai_urgency_score,
     }
 
-    response = supabase.table("issue_reports").insert(payload).execute()
+    response = supabase.table("reports").insert(payload).execute()
     return response.data[0] if response.data else {}

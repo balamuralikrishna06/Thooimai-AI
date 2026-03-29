@@ -1,12 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth, googleProvider } from "../firebase";
-import {
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signInWithPopup,
-    signOut,
-    onAuthStateChanged
-} from "firebase/auth";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext();
@@ -41,11 +33,25 @@ export function AuthProvider({ children }) {
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-                const userRole = await fetchUserRole(currentUser.uid);
-                setRole(userRole);
+        const syncUser = async (authUser) => {
+            if (!authUser) return;
+            // Ensure the user exists in public.users
+            await supabase.from('users').upsert({
+                id: authUser.id,
+                name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+                email: authUser.email
+                // role defaults to 'citizen' from DB schema
+            }, { onConflict: 'id', ignoreDuplicates: true }); // Only insert if missing or ignore updates if we don't want to overwrite
+
+            setUser(authUser);
+            const userRole = await fetchUserRole(authUser.id);
+            setRole(userRole);
+        };
+
+        // Fetch current session on mount
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                syncUser(session.user);
             } else {
                 setUser(null);
                 setRole(null);
@@ -53,73 +59,65 @@ export function AuthProvider({ children }) {
             setLoading(false);
         });
 
-        return () => {
-            unsubscribe();
-        };
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (session?.user) {
+                syncUser(session.user);
+            } else {
+                setUser(null);
+                setRole(null);
+            }
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const loginWithEmail = async (email, password) => {
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            return userCredential.user;
-        } catch (error) {
-            throw error;
-        }
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        return data.user;
     };
 
     const signUpWithEmail = async (email, password, name) => {
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // Ensure user row exists in Supabase
-            if (user) {
-                const { error: insertError } = await supabase.from('users').upsert({
-                    id: user.uid,
-                    name: name,
-                    email: email,
-                    role: 'citizen'
-                });
-                if (insertError) console.error("Error inserting user:", insertError);
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: name,
+                }
             }
+        });
+        if (error) throw error;
 
-            return user;
-        } catch (error) {
-            throw error;
+        // Ensure user row exists in Supabase public schema
+        if (data?.user) {
+            const { error: insertError } = await supabase.from('users').upsert({
+                id: data.user.id,
+                name: name,
+                email: email,
+                role: 'citizen'
+            });
+            if (insertError) console.error("Error inserting user:", insertError);
         }
+        return data.user;
     };
 
     const loginWithGoogle = async () => {
-        try {
-            const userCredential = await signInWithPopup(auth, googleProvider);
-            const user = userCredential.user;
-
-            // Check if user exists in Supabase, if not insert default role
-            if (user) {
-                const { data, error } = await supabase.from('users').select('id').eq('id', user.uid).single();
-                if (!data) {
-                    const { error: insertError } = await supabase.from('users').upsert({
-                        id: user.uid,
-                        name: user.displayName || "Google User",
-                        email: user.email,
-                        role: 'citizen'
-                    });
-                    if (insertError) console.error("Error inserting user:", insertError);
-                }
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
             }
-
-            return user;
-        } catch (error) {
-            throw error;
-        }
+        });
+        if (error) throw error;
+        return data; // Note: For OAuth, user info comes back later via onAuthStateChange
     };
 
     const logout = async () => {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error("Error logging out", error);
-        }
+        const { error } = await supabase.auth.signOut();
+        if (error) console.error("Error logging out", error);
     };
 
     const value = {

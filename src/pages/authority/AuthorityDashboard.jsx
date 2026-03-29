@@ -45,7 +45,7 @@ function exportCsv(data) {
   URL.revokeObjectURL(url);
 }
 
-function ActionButtons({ report, assigning, onAiAssign, onMarkCompleted, onUpdateStatus }) {
+function ActionButtons({ report, assigning, onAiAssign, onMarkCompleted, onUpdateStatus, workers, onAssign }) {
   const [open, setOpen] = useState(false);
   const isAssigned = !!report.assigned_worker_id;
   const isCompleted = report.status === "Completed" || report.status === "Resolved";
@@ -105,6 +105,28 @@ function ActionButtons({ report, assigning, onAiAssign, onMarkCompleted, onUpdat
                 {s}
               </button>
             ))}
+            <div className="px-3 pt-2 pb-1 border-t border-slate-100 font-bold text-xs text-slate-500 uppercase mt-1">Assign Worker</div>
+            {workers.length === 0 ? (
+              <p className="px-3 py-2 text-[10px] text-slate-400 italic">No workers found</p>
+            ) : (
+              workers.map(w => (
+                <button
+                  key={w.id}
+                  onClick={async () => {
+                    const res = await onAssign(report.id, w.id);
+                    if (res?.success) {
+                      alert("Successfully assigned!");
+                      setOpen(false);
+                    } else {
+                      alert("Assignment failed. Check if worker exists.");
+                    }
+                  }}
+                  className="w-full text-left px-4 py-1.5 hover:bg-slate-50 text-slate-600 text-xs"
+                >
+                  {w.name || w.email}
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -156,7 +178,10 @@ export default function AuthorityDashboard() {
 
   // ── Single AI Assign (per report) ──
   const aiAssign = async (report) => {
-    if (workers.length === 0) return;
+    if (workers.length === 0) {
+      alert("No sanitation workers found. Please ensure you have promoted accounts to the 'worker' role in the database.");
+      return;
+    }
     setAssigning(report.id);
     try {
       const loadMap = buildLoadMap(reports);
@@ -199,7 +224,10 @@ Rules:
 
   // ── Bulk AI Assign All Pending ──
   const aiAssignAll = async () => {
-    if (workers.length === 0) return;
+    if (workers.length === 0) {
+      alert("No sanitation workers found. Please ensure you have promoted accounts to the 'worker' role in the database.");
+      return;
+    }
     const unassigned = reports.filter(r => !r.assigned_worker_id && r.status === 'Pending');
     if (unassigned.length === 0) return;
     setBulkAssigning(true);
@@ -277,9 +305,10 @@ Reply with ONLY valid JSON array, no markdown, no explanation:
 
   const filtered = useMemo(() => {
     return reports.filter((r) => {
-      const matchStatus = filterStatus === "All" || r.status === filterStatus;
+      const matchStatus = filterStatus === "All" || (r.status && r.status.toLowerCase() === filterStatus.toLowerCase());
       const matchCat = filterCategory === "All" || r.category === filterCategory;
-      const matchLoc = r.location?.toLowerCase().includes(searchLocation.toLowerCase()) || false;
+      const searchLower = searchLocation.toLowerCase().trim();
+      const matchLoc = !searchLower || (r.location && r.location.toLowerCase().includes(searchLower)) || (r.area && r.area.toLowerCase().includes(searchLower));
       return matchStatus && matchCat && matchLoc;
     });
   }, [reports, filterStatus, filterCategory, searchLocation]);
@@ -287,7 +316,7 @@ Reply with ONLY valid JSON array, no markdown, no explanation:
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const pendingCount = reports.filter((r) => r.status === "Pending").length;
+  const pendingCount = reports.filter((r) => r.status && r.status.toLowerCase() === "pending").length;
   const overflowing = reports.filter((r) => r.category === "Overflowing Bin").length;
   const plasticTons = (reports.filter((r) => r.category === "Plastic Waste").length * 0.4).toFixed(1);
 
@@ -539,6 +568,8 @@ Reply with ONLY valid JSON array, no markdown, no explanation:
                           onAiAssign={aiAssign}
                           onMarkCompleted={markCompleted}
                           onUpdateStatus={updateStatus}
+                          workers={workers}
+                          onAssign={assignWorker}
                         />
                       </td>
                     </tr>

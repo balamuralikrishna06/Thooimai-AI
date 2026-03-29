@@ -53,7 +53,7 @@ export default function SubmitReport() {
     if (!audioBlob) return setError("Please record your Tamil speech first.");
     if (!imageFile) return setError("Please upload an evidence photo.");
     if (!location.lat) return setError("Please capture your GPS location.");
-    if (!user?.uid) return setError("You must be logged in.");
+    if (!user?.id) return setError("You must be logged in.");
 
     try {
       setError(""); setLoading(true);
@@ -61,7 +61,7 @@ export default function SubmitReport() {
       // Step 1: Upload image to Supabase Storage
       setProgress("Uploading image...");
       const imageExt = imageFile.name.split(".").pop();
-      const imagePath = `${user.uid}/${Date.now()}.${imageExt}`;
+      const imagePath = `${user.id}/${Date.now()}.${imageExt}`;
       const { error: imgErr } = await supabase.storage
         .from("report-images")
         .upload(imagePath, imageFile, { upsert: true });
@@ -74,7 +74,7 @@ export default function SubmitReport() {
       const formData = new FormData();
       formData.append("audio_file", audioBlob, "recording.webm");
       formData.append("image_url", imageUrl);
-      formData.append("user_id", user.uid);
+      formData.append("user_id", user.id);
       formData.append("latitude", location.lat);
       formData.append("longitude", location.lng);
 

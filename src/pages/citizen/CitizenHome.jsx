@@ -47,10 +47,10 @@ export default function CitizenHome() {
           {user ? (
             <div className="relative group">
               <img
-                src={user.photoURL}
-                alt={user.displayName}
+                src={user.user_metadata?.avatar_url}
+                alt={user.user_metadata?.full_name || user.email}
                 className="size-10 rounded-full border-2 border-[#13ecc8]/50 object-cover cursor-pointer hover:border-[#13ecc8] transition-colors"
-                title={user.displayName}
+                title={user.user_metadata?.full_name || user.email}
               />
               <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-[#4c9a8d]/10">
                 <button

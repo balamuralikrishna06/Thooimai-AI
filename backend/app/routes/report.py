@@ -86,6 +86,10 @@ async def analyze_waste_report(
             longitude=longitude,
             image_url=image_url,
             audio_url=audio_url,
+            category=analysis.get("category", "General Waste"),
+            location=analysis.get("location", "Unknown"),
+            severity=analysis.get("severity", "Medium"),
+            ai_urgency_score=analysis.get("ai_urgency_score", 50),
         )
 
         return JSONResponse(content={
@@ -96,6 +100,10 @@ async def analyze_waste_report(
             "priority": priority,
             "area": area,
             "ward": ward,
+            "category": report.get("category"),
+            "location": report.get("location"),
+            "severity": report.get("severity"),
+            "ai_urgency_score": report.get("ai_urgency_score"),
             "latitude": latitude,
             "longitude": longitude,
             "image_url": image_url,

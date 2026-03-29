@@ -13,26 +13,29 @@ export function ReportsProvider({ children }) {
   const fetchReports = async () => {
     if (!user) return;
     setLoading(true);
-
-    let query = supabase.from('issue_reports').select(`
+    console.log(`[ReportsContext] Fetching for role: ${role}, user: ${user.id}`);
+    
+    let query = supabase.from('reports').select(`
       *,
       users:user_id (name, email),
       worker:assigned_worker_id (name, email)
     `).order('created_at', { ascending: false });
 
-    // Apply role-based filtering if RLS isn't strictly relied upon for all UI states
+    // Apply role-based filtering
     if (role === 'citizen') {
-      query = query.eq('user_id', user.uid);
+      console.log(`[ReportsContext] Filtering for citizen: ${user.id}`);
+      query = query.eq('user_id', user.id);
     } else if (role === 'worker') {
-      query = query.eq('assigned_worker_id', user.uid);
+      console.log(`[ReportsContext] Filtering for worker: ${user.id}`);
+      query = query.eq('assigned_worker_id', user.id);
+    } else {
+      console.log(`[ReportsContext] Admin role detected - showing all reports`);
     }
-    // Admin sees all, no additional filter needed
 
     const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching reports:", error);
-    } else {
+    if (error) console.error("Error fetching reports:", error);
+    else {
+      console.log(`[ReportsContext] Fetched ${data?.length || 0} reports`);
       setReports(data || []);
     }
     setLoading(false);
@@ -51,7 +54,7 @@ export function ReportsProvider({ children }) {
           {
             event: '*', // Listen for ALL events (INSERT, UPDATE, DELETE)
             schema: 'public',
-            table: 'issue_reports',
+            table: 'reports',
           },
           (payload) => {
             console.log('Real-time update received:', payload);
@@ -71,8 +74,8 @@ export function ReportsProvider({ children }) {
   const addReport = async (reportData) => {
     try {
       const { data, error } = await supabase
-        .from('issue_reports')
-        .insert([{ ...reportData, user_id: user.uid }])
+        .from('reports')
+        .insert([{ ...reportData, user_id: user.id }])
         .select()
         .single();
 
@@ -90,7 +93,7 @@ export function ReportsProvider({ children }) {
   const updateStatus = async (id, status) => {
     try {
       const { error } = await supabase
-        .from('issue_reports')
+        .from('reports')
         .update({ status })
         .eq('id', id);
 
@@ -109,12 +112,15 @@ export function ReportsProvider({ children }) {
     try {
       // Must be Admin to do this (enforced by RLS)
       const { error } = await supabase
-        .from('issue_reports')
-        .update({ assigned_worker_id: workerId, status: 'Assigned' })
+        .from('reports')
+        .update({ assigned_worker_id: workerId, status: 'in_progress' }) // Use a status that exists in your database rules
         .eq('id', reportId);
 
-      if (error) throw error;
-      fetchReports(); // Refresh to get the nested worker profile data
+      if (error) {
+        console.error("Assignment error details:", error);
+        throw error;
+      }
+      fetchReports(); 
       return { success: true };
     } catch (error) {
       console.error("Error assigning worker", error);

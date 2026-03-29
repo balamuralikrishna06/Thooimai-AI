@@ -18,7 +18,7 @@ function optimizeRoute(tasks, currentWorkerId) {
     if (!tasks || !currentWorkerId) return [];
 
     return tasks
-        .filter(task => task.assigned_worker_id === currentWorkerId && task.status !== "Completed")
+        .filter(task => task.assigned_worker_id === currentWorkerId && task.status?.toLowerCase() !== "completed")
         .sort((a, b) => {
             const scoreA = a.ai_urgency_score || 50;
             const scoreB = b.ai_urgency_score || 50;
@@ -83,16 +83,16 @@ export default function WorkerDashboard() {
 
     // Optimized Route (only non-completed tasks) — use user.uid for Firebase auth
     const optimizedTasks = useMemo(() => {
-        return optimizeRoute(reports, user?.uid);
+        return optimizeRoute(reports, user?.id);
     }, [reports, user]);
 
     // All tasks assigned to this worker (including completed – for progress tracking)
     const allMyTasks = useMemo(() => {
-        return reports.filter(r => r.assigned_worker_id === user?.uid);
+        return reports.filter(r => r.assigned_worker_id === user?.id);
     }, [reports, user]);
 
     const completedTodayCount = useMemo(() => {
-        return allMyTasks.filter(r => r.status === "Completed").length;
+        return allMyTasks.filter(r => r.status?.toLowerCase() === "completed").length;
     }, [allMyTasks]);
 
     // ─── Route Summary Stats ───
